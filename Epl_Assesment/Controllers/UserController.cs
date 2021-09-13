@@ -134,6 +134,7 @@ namespace Epl_Assesment.Controllers
                 userAdd.balance += amount;
             }
            await _userManager.UpdateAsync(userAdd);
+           await _userManager.UpdateAsync(userSub);
            return Ok(userAdd.balance);
         }
 
