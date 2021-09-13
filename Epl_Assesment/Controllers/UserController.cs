@@ -46,30 +46,30 @@ namespace Epl_Assesment.Controllers
                 var result = await _userManager.CreateAsync(user, newUSer.Password);
                 if (result.Succeeded)
                 {
-                    return new {result="added successfully" };
+                    return new { result = "added successfully" };
                 }
                 return new { result = "register failed" };
             }
             catch (Exception ex)
             {
-                return new { result=ex.Message };
+                return new { result = ex.Message };
             }
 
         }
 
         [HttpGet]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+       // [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [Route("api/UserController/GetAllUsers")]
         public async Task<object> GetAllUsers()
         {
             try
             {
-                var users =  _userManager.Users.Select(x=>new UserInfo(x.Email,x.UserName));
+                var users = _userManager.Users.Select(x => new UserInfo(x.Email, x.UserName));
                 return await Task.FromResult(users);
             }
             catch (Exception ex)
             {
-                return new { resulte=ex.Message };
+                return new { resulte = ex.Message };
             }
         }
         [HttpPost]
@@ -85,12 +85,13 @@ namespace Epl_Assesment.Controllers
                 var result = await _signInManager.PasswordSignInAsync(loggedUser.UserName, loggedUser.Password, false, false);
                 if (result.Succeeded)
                 {
-                   var appuser = await _userManager.FindByNameAsync(loggedUser.UserName);
+                    var appuser = await _userManager.FindByNameAsync(loggedUser.UserName);
+                    
                     var user = new UserInfo(appuser.Email, appuser.UserName);
                     user.Token = GenerateToken(appuser);
                     return await Task.FromResult(user);
                 }
-                return new {result= "Login failed" };
+                return new { result = "Login failed" };
             }
             catch (Exception ex)
             {
@@ -112,13 +113,28 @@ namespace Epl_Assesment.Controllers
                     new System.Security.Claims.Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
                 }),
                 Expires = DateTime.UtcNow.AddHours(12),
-                SigningCredentials=new SigningCredentials(new SymmetricSecurityKey(key),SecurityAlgorithms.HmacSha256Signature),
-                Audience=_jwtConfig.Audience,
-                Issuer=_jwtConfig.Issuser
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
+                Audience = _jwtConfig.Audience,
+                Issuer = _jwtConfig.Issuser
             };
             var token = jwtTokenHandeler.CreateToken(tokenDescriptor);
             return jwtTokenHandeler.WriteToken(token);
 
+        }
+        [HttpGet]
+        [Route("api/UserController/balance")]
+        public async Task<IActionResult> WalletOPerations(string addedBalanceEmail, string SubtractedBalanceEmail, double amount)
+        {
+         var userSub = await _userManager.FindByEmailAsync(SubtractedBalanceEmail);
+         var userAdd = await _userManager.FindByEmailAsync(addedBalanceEmail);
+
+         if(userSub.balance>= amount)
+            {
+                userSub.balance -= amount;
+                userAdd.balance += amount;
+            }
+           await _userManager.UpdateAsync(userAdd);
+           return Ok(userAdd.balance);
         }
 
     }
